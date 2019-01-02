@@ -37,7 +37,7 @@ class App extends Component {
 
       // Set web3, accounts, and contract to the state, and then proceed with an
       // example of interacting with the contract's methods.
-      this.setState({ web3, accounts, contract: instance }, this.runExample);
+      this.setState({ web3, accounts, contract: instance}, this.runExample);
     } catch (error) {
       // Catch any errors for any of the above operations.
       alert(
@@ -47,17 +47,15 @@ class App extends Component {
     }
   };
 
+  //, this.runExample
   runExample = async () => {
-    const { accounts, contract } = this.state;
+    const { contract } = this.state;
+    // Get the value from the contract to prove it worked.
+    const response = await contract.methods.get().call();
+    console.log("Response: ", response)
 
-    // // Stores a given value, 5 by default.
-    // await contract.methods.set(5).send({ from: accounts[0] });
-    //
-    // // Get the value from the contract to prove it worked.
-    // const response = await contract.methods.get().call();
-    //
-    // // Update state with the result.
-    // this.setState({ storageValue: response });
+    // Update state with the result.
+    this.setState({ ipfsHash: response });
   };
 
   captureFile(event) {
@@ -73,15 +71,22 @@ class App extends Component {
     }
   }
 
-  onSubmit(event) {
+  onSubmit = async (event) => {
     event.preventDefault();
-    ipfs.files.add(this.state.buffer, (err, result) => {
-      if(err) {
+    ipfs.files.add(this.state.buffer, async (err, result) => {
+      if (err) {
         console.error(err);
         return;
       }
-      console.log('ipfsHash', result)
-      return this.setState({ipfsHash: result[0].hash})
+      console.log("Result: ", result[0].hash);
+      const {accounts, contract} = this.state;
+      await contract.methods.set(result[0].hash).send({from: accounts[0]});
+      const response = await contract.methods.get().call();
+
+      console.log("Response: ", response);
+
+      // Update state with the result.
+      this.setState({ ipfsHash: response });
 
     })
   }
